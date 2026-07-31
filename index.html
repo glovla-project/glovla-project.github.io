@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="GloVLA: let geometry move and local VLA interact for robust object-centric manipulation in unstructured environments">
+  <title>GloVLA: Let Geometry Move and Local VLA Interact for Robust Object-Centric Manipulation in Unstructured Environments</title>
+
+  <!-- Fonts: Space Grotesk (display) + Inter (body) + JetBrains Mono (code) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+  <!-- ============ HERO ============ -->
+  <header class="hero">
+    <!-- animated grasp-trajectory background -->
+    <svg class="hero-trajectory" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <path class="traj traj-1" d="M -50 480 C 200 420, 350 300, 520 310 S 850 380, 1020 260 S 1180 150, 1260 180" />
+      <path class="traj traj-2" d="M -50 380 C 250 340, 420 220, 610 250 S 900 330, 1260 210" />
+      <path class="traj traj-3" d="M -50 550 C 300 500, 500 420, 700 430 S 1000 470, 1260 360" />
+      <circle class="traj-dot traj-dot-1" r="5" />
+      <circle class="traj-dot traj-dot-2" r="4" />
+      <circle class="traj-dot traj-dot-3" r="4" />
+    </svg>
+
+    <div class="hero-inner">
+      <h1 class="hero-title">GloVLA: Let Geometry Move and Local VLA Interact for Robust Object-Centric Manipulation in Unstructured Environments</h1>
+
+      <p class="authors">Anonymous Authors</p>
+      <p class="affiliations">Paper under double-blind review</p>
+
+      <nav class="hero-links" aria-label="Paper resources">
+        <!-- Enable these buttons once the URLs exist:
+        <a class="btn" href="PAPER_PDF_URL" target="_blank" rel="noopener"><span class="btn-ic">📄</span> Paper</a>
+        <a class="btn" href="ARXIV_URL" target="_blank" rel="noopener"><span class="btn-ic">📚</span> arXiv</a>
+        <a class="btn" href="GITHUB_URL" target="_blank" rel="noopener"><span class="btn-ic">💻</span> Code</a>
+        <a class="btn" href="YOUTUBE_URL" target="_blank" rel="noopener"><span class="btn-ic">🎬</span> Video</a>
+        -->
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ============ ABSTRACT ============ -->
+    <section class="section" id="abstract">
+      <div class="container narrow">
+        <h2 class="section-title">Abstract</h2>
+        <p class="abstract-text">
+          Vision-language-action (VLA) models have shown promising generalization for
+          language-conditioned robot manipulation, but deploying them in unstructured
+          environments remains challenging. A single end-to-end VLA policy must
+          simultaneously solve long-range transport of the end effector to task-relevant
+          regions and short-horizon, contact-rich interaction upon arrival. This
+          formulation is inefficient and brittle: small visual shifts, distractors,
+          clutter, occlusions, or unfavorable initial gripper poses can push the policy
+          outside the local state distribution in which it was trained. We introduce
+          <strong>GloVLA</strong>, a hybrid framework that explicitly separates
+          object-centric manipulation into two complementary regimes: a geometric
+          transport controller moves the end-effector into interaction-centric handoff
+          regions, and local VLA policies handle only the short-horizon interaction
+          phases. GloVLA is model-agnostic and integrates with different VLA backbones
+          with no additional demonstrations and no changes to the action space or success
+          predicate. Experiments on standard LIBERO and LIBERO-Plus Object tasks, a newly
+          introduced <strong>LIBERO-Challenge</strong> benchmark, and real-world
+          unstructured settings show that GloVLA improves task success and substantially
+          lowers VLA inference cost compared with full end-to-end VLA execution. On
+          LIBERO-Challenge, full-trajectory GR00T N1.6 execution degrades to 20.9% average
+          success while GloVLA retains 88.5%; on a physical UR10e, overall success improves
+          from 35.6% to 90.0% while mean inference time is more than halved.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ TEASER VIDEO ============ -->
+    <section class="section" id="teaser">
+      <div class="container container-wide">
+        <figure class="teaser-video">
+          <div class="video-phase-wrap">
+            <video id="teaser-video" autoplay muted loop playsinline poster="static/images/placeholder_frame.png">
+              <source src="static/videos/teaser.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+            <div class="phase-badge" id="phase-badge" data-phase="home">
+              <span class="phase-dot"></span>
+              <span class="phase-text">home</span>
+            </div>
+          </div>
+          <figcaption>GloVLA on a real UR10e tabletop: a geometric transport controller (gray phases) moves the arm to object- and basket-centric handoff regions, then local VLA policies (orange phases) handle the contact-rich grasp and place. The badge tracks the current phase. Videos play at 3&times; speed.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ METHOD ============ -->
+    <section class="section" id="method">
+      <div class="container">
+        <h2 class="section-title">Method</h2>
+
+        <figure class="figure">
+          <img src="static/images/method_flowchart.png" alt="FullVLA baseline versus the proposed GloVLA: geometry for transport, VLA for contact">
+          <figcaption>A full-trajectory VLA must stay visually stable over the entire episode, so failures occur before the robot ever reaches the contact phase. GloVLA factorizes the task: a geometric transport controller moves the end-effector into interaction-centric handoff regions, and a local VLA policy is invoked only inside the object-centric handoff ball <em>B<sub>o</sub></em> where visual feedback and contact reasoning are genuinely needed.</figcaption>
+        </figure>
+
+        <p class="body-text narrow">
+          For each LIBERO Object task, the original demonstrations are split into a
+          grasp-sphere dataset around the target object and a place-sphere dataset around
+          the basket, so the policy sees dense supervision near contact while the transport
+          controller handles global transport. The controller emits the same 7D OSC-pose
+          action format as the policy, and the episode is still judged by the official
+          LIBERO success predicate. At rollout time execution is a four-mode switched
+          state machine:
+        </p>
+
+        <figure class="figure phase-machine" aria-label="Rollout state machine with a real episode frame per phase">
+          <div class="phase-track">
+            <div class="phase-panel">
+              <img src="static/images/phases/phase_0.jpg" alt="Home pose: arm at reset before transport">
+              <span class="phase-name phase-name-neutral">home</span>
+              <span class="phase-desc">Robot at its reset pose; the target object is localized.</span>
+            </div>
+            <span class="phase-sep">&rarr;</span>
+            <div class="phase-panel">
+              <img src="static/images/phases/phase_1.jpg" alt="Transport controller drives the gripper toward the object (gray trace)">
+              <span class="phase-name phase-name-planner">transport &rarr; object</span>
+              <span class="phase-desc">Controller drives the gripper to the object handoff region.</span>
+            </div>
+            <span class="phase-sep">&rarr;</span>
+            <div class="phase-panel">
+              <img src="static/images/phases/phase_2.jpg" alt="Local grasp VLA closes on the cup (orange trace)">
+              <span class="phase-name phase-name-vla">grasp VLA</span>
+              <span class="phase-desc">VLA closes the loop to grasp and lift the object.</span>
+            </div>
+            <span class="phase-sep">&rarr;</span>
+            <div class="phase-panel">
+              <img src="static/images/phases/phase_3.jpg" alt="Transport controller carries the object to the basket (gray trace)">
+              <span class="phase-name phase-name-planner">transport &rarr; basket</span>
+              <span class="phase-desc">Controller carries the held object to the basket handoff region.</span>
+            </div>
+            <span class="phase-sep">&rarr;</span>
+            <div class="phase-panel">
+              <img src="static/images/phases/phase_4.jpg" alt="Local place VLA releases the object into the basket (orange trace)">
+              <span class="phase-name phase-name-vla">place VLA</span>
+              <span class="phase-desc">VLA aligns and releases the object into the basket.</span>
+            </div>
+          </div>
+          <figcaption>One real episode through the four-mode switched state machine. The gripper trace is colored by controller: <span class="key-planner">gray</span> segments are geometric transport, <span class="key-vla">orange</span> segments are the local VLA policies acting inside the handoff regions.</figcaption>
+        </figure>
+
+        <div class="principles">
+          <div class="principle">
+            <h3>No extra data</h3>
+            <p>Local policies train on the same demonstrations as the full-trajectory baseline &mdash; gains cannot come from extra supervision.</p>
+          </div>
+          <div class="principle">
+            <h3>Same task definition</h3>
+            <p>Action space, observations, and the official success predicate are unchanged &mdash; the task is not made easier.</p>
+          </div>
+          <div class="principle">
+            <h3>Deterministic handoff</h3>
+            <p>The controller&ndash;policy boundary is fixed object-centric offsets, not a learned component &mdash; it adds no new failure surface.</p>
+          </div>
+          <div class="principle">
+            <h3>Backbone-agnostic</h3>
+            <p>Any VLA that can be trained on the full task can be trained on the local phases instead.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ RESULTS: CLEAN BENCHMARK ============ -->
+    <section class="section" id="results-clean">
+      <div class="container">
+        <h2 class="section-title">Clean LIBERO Object Results</h2>
+        <p class="body-text narrow">
+          Even on the clean benchmark, where FullVLA is already strong, the factorization
+          improves average success for every one of the four backbones &mdash; and reduces
+          episode-to-episode variance (e.g. GR00T N1.6&rsquo;s standard deviation drops from
+          6.0 to 1.9 points).
+        </p>
+
+        <figure class="figure chart-figure">
+          <svg viewBox="0 0 1000 380" role="img" aria-label="Average success rate on clean LIBERO Object: FullVLA versus GloVLA across four backbones">
+            <g class="chart-grid">
+              <line x1="70" y1="320" x2="950" y2="320"/>
+              <line x1="70" y1="245" x2="950" y2="245"/>
+              <line x1="70" y1="170" x2="950" y2="170"/>
+              <line x1="70" y1="95"  x2="950" y2="95"/>
+              <line x1="70" y1="20"  x2="950" y2="20"/>
+            </g>
+            <g class="chart-ticks" text-anchor="end">
+              <text x="60" y="324">0</text>
+              <text x="60" y="249">25</text>
+              <text x="60" y="174">50</text>
+              <text x="60" y="99">75</text>
+              <text x="60" y="24">100</text>
+            </g>
+            <!-- bars: Full (gray) then Hybrid (orange), 24px wide, 2px gap, rounded data-end -->
+            <g>
+              <path class="bar-full" d="M155 62 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <path class="bar-hyb"  d="M181 28 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <text class="bar-label" x="167" y="50" text-anchor="middle">87.4</text>
+              <text class="bar-label" x="193" y="16" text-anchor="middle">98.6</text>
+              <text class="axis-label" x="180" y="348" text-anchor="middle">&pi;&#8320;</text>
+            </g>
+            <g>
+              <path class="bar-full" d="M375 31 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <path class="bar-hyb"  d="M401 25 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <text class="bar-label" x="381" y="19" text-anchor="middle">97.8</text>
+              <text class="bar-label" x="419" y="13" text-anchor="middle">99.6</text>
+              <text class="axis-label" x="400" y="348" text-anchor="middle">&pi;&#8320;.&#8325;</text>
+            </g>
+            <g>
+              <path class="bar-full" d="M595 58 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <path class="bar-hyb"  d="M621 29 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <text class="bar-label" x="607" y="46" text-anchor="middle">88.8</text>
+              <text class="bar-label" x="633" y="17" text-anchor="middle">98.4</text>
+              <text class="axis-label" x="620" y="348" text-anchor="middle">GR00T N1.6</text>
+            </g>
+            <g>
+              <path class="bar-full" d="M815 35 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <path class="bar-hyb"  d="M841 25 q0 -4 4 -4 h16 q4 0 4 4 V320 h-24 Z"/>
+              <text class="bar-label" x="821" y="23" text-anchor="middle">96.4</text>
+              <text class="bar-label" x="859" y="13" text-anchor="middle">99.6</text>
+              <text class="axis-label" x="840" y="348" text-anchor="middle">GR00T N1.7</text>
+            </g>
+            <g class="chart-legend">
+              <rect x="70" y="360" width="14" height="14" rx="3" class="bar-full"/>
+              <text x="92" y="372">FullVLA</text>
+              <rect x="185" y="360" width="14" height="14" rx="3" class="bar-hyb"/>
+              <text x="207" y="372">GloVLA (Ours)</text>
+            </g>
+          </svg>
+          <figcaption>Average closed-loop success rate (%) over the ten LIBERO Object tasks, 50 episodes per task.</figcaption>
+        </figure>
+
+        <details class="table-details">
+          <summary>Full per-task table (Table I)</summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2">LIBERO Object Task</th>
+                  <th colspan="2">&pi;<sub>0</sub></th>
+                  <th colspan="2">&pi;<sub>0.5</sub></th>
+                  <th colspan="2">GR00T N1.6</th>
+                  <th colspan="2">GR00T N1.7</th>
+                </tr>
+                <tr>
+                  <th>Full</th><th>Hybrid</th>
+                  <th>Full</th><th>Hybrid</th>
+                  <th>Full</th><th>Hybrid</th>
+                  <th>Full</th><th>Hybrid</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Alphabet Soup</td><td>94.0&plusmn;12.0</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>98.0&plusmn;4.5</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>BBQ Sauce</td><td>82.0&plusmn;4.5</td><td class="win">90.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>60.0&plusmn;15.8</td><td class="win">90.0&plusmn;8.9</td><td>94.0&plusmn;5.5</td><td class="win">98.0&plusmn;4.5</td></tr>
+                <tr><td>Butter</td><td>84.0&plusmn;11.4</td><td class="win">100.0&plusmn;0.0</td><td>96.0&plusmn;5.5</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>98.0&plusmn;4.5</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>Chocolate Pudding</td><td>92.0&plusmn;4.5</td><td class="win">98.0&plusmn;4.5</td><td>90.0&plusmn;8.9</td><td class="win">96.0&plusmn;5.5</td><td>90.0&plusmn;0.0</td><td class="win">100.0&plusmn;0.0</td><td>94.0&plusmn;5.5</td><td class="win">98.0&plusmn;4.5</td></tr>
+                <tr><td>Cream Cheese</td><td>88.0&plusmn;11.0</td><td class="win">98.0&plusmn;4.5</td><td>98.0&plusmn;4.5</td><td class="win">100.0&plusmn;0.0</td><td>60.0&plusmn;14.1</td><td class="win">100.0&plusmn;0.0</td><td>98.0&plusmn;4.5</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>Ketchup</td><td>92.0&plusmn;7.5</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td></tr>
+                <tr><td>Milk</td><td>76.0&plusmn;23.0</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>96.0&plusmn;5.5</td><td class="win">100.0&plusmn;0.0</td><td>94.0&plusmn;8.9</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>Orange Juice</td><td>74.0&plusmn;15.2</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>96.0&plusmn;5.5</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td></tr>
+                <tr><td>Salad Dressing</td><td>98.0&plusmn;4.5</td><td class="win">100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td><td>94.0&plusmn;12.0</td><td class="win">98.0&plusmn;4.5</td><td>100.0&plusmn;0.0</td><td>100.0&plusmn;0.0</td></tr>
+                <tr><td>Tomato Sauce</td><td>94.0&plusmn;5.5</td><td class="win">100.0&plusmn;0.0</td><td>94.0&plusmn;5.5</td><td class="win">100.0&plusmn;0.0</td><td>92.0&plusmn;7.5</td><td class="win">96.0&plusmn;5.5</td><td>88.0&plusmn;13.0</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr class="row-avg"><td>Average</td><td>87.4&plusmn;9.9</td><td class="win">98.6&plusmn;0.9</td><td>97.8&plusmn;2.4</td><td class="win">99.6&plusmn;0.6</td><td>88.8&plusmn;6.0</td><td class="win">98.4&plusmn;1.9</td><td>96.4&plusmn;4.6</td><td class="win">99.6&plusmn;0.9</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ ROBUSTNESS CHALLENGE ============ -->
+    <section class="section" id="robustness">
+      <div class="container">
+        <h2 class="section-title">Robustness Challenge</h2>
+        <p class="body-text narrow">
+          A deterministic 50-scene LIBERO Object challenge set &mdash; five perturbation
+          families (clutter, distraction, obstruction, visual shift, illumination) at
+          three difficulty tiers, applied at evaluation time only. Official initial
+          states and success predicates are unchanged, so the challenge isolates exactly
+          one question: does a policy succeed through genuine interaction skill, or only
+          by fitting an easy, unperturbed approach trajectory?
+        </p>
+
+        <figure class="figure">
+          <img src="static/images/challenge_scenes.jpg" alt="Ten example scenes from the LIBERO-Challenge benchmark, from single-perturbation easy settings to composed difficult settings">
+          <figcaption>Example scenes from the 50-scene challenge set, rendered directly from the benchmark code. (a)&ndash;(e): <em>easy</em> single perturbations (clutter, distraction, illumination, obstruction, visual shift); (f), (g): <em>medium</em> settings with 2&ndash;3 simultaneous perturbations; (h)&ndash;(j): <em>difficult</em> settings with 4&ndash;5 combined perturbations.</figcaption>
+        </figure>
+
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value">20.9% &rarr; 88.5%</span>
+            <span class="stat-label">all-scene success, FullVLA &rarr; GloVLA (+67.6 points)</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">+78.2 pp</span>
+            <span class="stat-label">largest gap (distraction &amp; medium compositions)</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">74.9%</span>
+            <span class="stat-label">GloVLA retained on hard 4&ndash;5 perturbation scenes (FullVLA 1.5%)</span>
+          </div>
+        </div>
+
+        <figure class="figure chart-figure">
+          <svg viewBox="0 0 1000 400" role="img" aria-label="Success rate degradation from easy to difficult perturbation tiers">
+            <g class="chart-grid">
+              <line x1="90" y1="320" x2="910" y2="320"/>
+              <line x1="90" y1="245" x2="910" y2="245"/>
+              <line x1="90" y1="170" x2="910" y2="170"/>
+              <line x1="90" y1="95"  x2="910" y2="95"/>
+              <line x1="90" y1="20"  x2="910" y2="20"/>
+            </g>
+            <g class="chart-ticks" text-anchor="end">
+              <text x="80" y="324">0</text>
+              <text x="80" y="249">25</text>
+              <text x="80" y="174">50</text>
+              <text x="80" y="99">75</text>
+              <text x="80" y="24">100</text>
+            </g>
+            <polyline class="line-full" points="90,225.8 500,295.1 910,315.5"/>
+            <polyline class="line-hyb"  points="90,38.6 500,60.5 910,95.3"/>
+            <g class="marker-full">
+              <circle cx="90"  cy="225.8" r="6"/>
+              <circle cx="500" cy="295.1" r="6"/>
+              <circle cx="910" cy="315.5" r="6"/>
+            </g>
+            <g class="marker-hyb">
+              <circle cx="90"  cy="38.6" r="6"/>
+              <circle cx="500" cy="60.5" r="6"/>
+              <circle cx="910" cy="95.3" r="6"/>
+            </g>
+            <g class="bar-label">
+              <text x="112" y="220">31.4</text>
+              <text x="500" y="319" text-anchor="middle">8.3</text>
+              <text x="888" y="311" text-anchor="end">1.5</text>
+              <text x="112" y="33">93.8</text>
+              <text x="500" y="55" text-anchor="middle">86.5</text>
+              <text x="888" y="90" text-anchor="end">74.9</text>
+            </g>
+            <g class="axis-label" text-anchor="middle">
+              <text x="130" y="352">Easy (30 scenes)</text>
+              <text x="500" y="352">Medium (10)</text>
+              <text x="870" y="352">Hard (10)</text>
+            </g>
+            <g class="chart-legend">
+              <rect x="90" y="376" width="14" height="14" rx="3" class="bar-full"/>
+              <text x="112" y="388">FullVLA</text>
+              <rect x="205" y="376" width="14" height="14" rx="3" class="bar-hyb"/>
+              <text x="227" y="388">GloVLA (Ours)</text>
+            </g>
+          </svg>
+          <figcaption>GR00T N1.6 success rate (%) by difficulty tier on LIBERO-Challenge, 50 episodes per scene. FullVLA falls monotonically to 1.5%; GloVLA degrades gracefully, retaining 74.9% under 4&ndash;5 combined perturbations.</figcaption>
+        </figure>
+
+        <figure class="figure chart-figure">
+          <svg viewBox="0 0 1000 498" role="img" aria-label="Success rate by perturbation family, FullVLA versus GloVLA">
+            <g class="hbar-rows">
+              <g>
+                <text class="axis-label" x="188" y="44" text-anchor="end">Clutter</text>
+                <rect class="bar-full" x="200" y="28" width="165.9" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="50" width="661.5" height="20" rx="4"/>
+                <text class="bar-label" x="374" y="43">23.7</text>
+                <text class="bar-label" x="869" y="65">94.5</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="108" text-anchor="end">Distraction</text>
+                <rect class="bar-full" x="200" y="92" width="94.5" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="114" width="641.9" height="20" rx="4"/>
+                <text class="bar-label" x="303" y="107">13.5</text>
+                <text class="bar-label" x="850" y="129">91.7</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="172" text-anchor="end">Obstruction</text>
+                <rect class="bar-full" x="200" y="156" width="302.4" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="178" width="673.4" height="20" rx="4"/>
+                <text class="bar-label" x="510" y="171">43.2</text>
+                <text class="bar-label" x="881" y="193">96.2</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="236" text-anchor="end">Visual shift</text>
+                <rect class="bar-full" x="200" y="220" width="256.9" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="242" width="632.1" height="20" rx="4"/>
+                <text class="bar-label" x="465" y="235">36.7</text>
+                <text class="bar-label" x="840" y="257">90.3</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="300" text-anchor="end">Illumination</text>
+                <rect class="bar-full" x="200" y="284" width="277.9" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="306" width="673.4" height="20" rx="4"/>
+                <text class="bar-label" x="486" y="299">39.7</text>
+                <text class="bar-label" x="881" y="321">96.2</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="364" text-anchor="end">Medium comp.</text>
+                <rect class="bar-full" x="200" y="348" width="58.1" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="370" width="605.5" height="20" rx="4"/>
+                <text class="bar-label" x="266" y="363">8.3</text>
+                <text class="bar-label" x="813" y="385">86.5</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="428" text-anchor="end">Hard comp.</text>
+                <rect class="bar-full" x="200" y="412" width="10.5" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="434" width="524.3" height="20" rx="4"/>
+                <text class="bar-label" x="218" y="427">1.5</text>
+                <text class="bar-label" x="732" y="449">74.9</text>
+              </g>
+            </g>
+            <g class="chart-legend">
+              <rect x="200" y="478" width="14" height="14" rx="3" class="bar-full"/>
+              <text x="222" y="490">FullVLA</text>
+              <rect x="315" y="478" width="14" height="14" rx="3" class="bar-hyb"/>
+              <text x="337" y="490">GloVLA (Ours)</text>
+            </g>
+          </svg>
+          <figcaption>GR00T N1.6 success rate (%) per perturbation family on LIBERO-Challenge (averaged over ten object tasks, 50 episodes per scene). The gain is broadly distributed across all five families and both composition tiers.</figcaption>
+        </figure>
+
+        <details class="table-details">
+          <summary>Per-task robustness table, all ten objects (Table IV)</summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th rowspan="2">Object task</th>
+                  <th colspan="2">Clutter</th>
+                  <th colspan="2">Distraction</th>
+                  <th colspan="2">Obstruction</th>
+                  <th colspan="2">Visual shift</th>
+                  <th colspan="2">Illumination</th>
+                </tr>
+                <tr>
+                  <th>Full</th><th>Ours</th>
+                  <th>Full</th><th>Ours</th>
+                  <th>Full</th><th>Ours</th>
+                  <th>Full</th><th>Ours</th>
+                  <th>Full</th><th>Ours</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Alphabet soup</td><td>26.3&plusmn;20.9</td><td class="win">99.7&plusmn;0.8</td><td>12.0&plusmn;14.4</td><td class="win">100.0&plusmn;0.0</td><td>66.7&plusmn;15.8</td><td class="win">100.0&plusmn;0.0</td><td>54.3&plusmn;19.6</td><td class="win">100.0&plusmn;0.0</td><td>83.3&plusmn;7.7</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>BBQ sauce</td><td>3.3&plusmn;4.8</td><td class="win">94.7&plusmn;3.0</td><td>0.0&plusmn;0.0</td><td class="win">98.7&plusmn;1.5</td><td>10.0&plusmn;5.7</td><td class="win">86.7&plusmn;7.0</td><td>9.7&plusmn;8.8</td><td class="win">88.7&plusmn;11.5</td><td>4.3&plusmn;2.7</td><td class="win">90.3&plusmn;9.1</td></tr>
+                <tr><td>Butter</td><td>16.3&plusmn;15.5</td><td class="win">94.0&plusmn;5.8</td><td>5.0&plusmn;5.6</td><td class="win">57.3&plusmn;22.9</td><td>33.3&plusmn;17.0</td><td class="win">91.7&plusmn;12.7</td><td>37.3&plusmn;21.1</td><td class="win">80.3&plusmn;20.9</td><td>36.3&plusmn;8.5</td><td class="win">95.3&plusmn;4.5</td></tr>
+                <tr><td>Chocolate pudding</td><td>24.0&plusmn;17.8</td><td class="win">98.0&plusmn;1.8</td><td>10.7&plusmn;15.1</td><td class="win">94.0&plusmn;7.4</td><td>35.0&plusmn;14.4</td><td class="win">98.3&plusmn;2.7</td><td>37.3&plusmn;22.7</td><td class="win">88.0&plusmn;9.9</td><td>40.0&plusmn;8.4</td><td class="win">94.7&plusmn;6.8</td></tr>
+                <tr><td>Cream cheese</td><td>14.3&plusmn;7.3</td><td class="win">90.0&plusmn;4.7</td><td>20.0&plusmn;9.4</td><td class="win">96.0&plusmn;3.3</td><td>24.7&plusmn;4.7</td><td class="win">96.7&plusmn;1.0</td><td>14.3&plusmn;12.5</td><td class="win">86.0&plusmn;19.7</td><td>29.0&plusmn;6.3</td><td class="win">96.3&plusmn;1.5</td></tr>
+                <tr><td>Ketchup</td><td>71.3&plusmn;8.5</td><td class="win">91.3&plusmn;7.2</td><td>19.0&plusmn;13.8</td><td class="win">98.0&plusmn;3.1</td><td>73.7&plusmn;10.6</td><td class="win">100.0&plusmn;0.0</td><td>28.7&plusmn;27.9</td><td class="win">81.0&plusmn;30.9</td><td>28.0&plusmn;7.3</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>Milk</td><td>15.3&plusmn;13.7</td><td class="win">100.0&plusmn;0.0</td><td>0.3&plusmn;0.8</td><td class="win">100.0&plusmn;0.0</td><td>28.7&plusmn;4.3</td><td class="win">100.0&plusmn;0.0</td><td>43.7&plusmn;18.0</td><td class="win">100.0&plusmn;0.0</td><td>32.7&plusmn;14.6</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>Orange juice</td><td>11.7&plusmn;14.2</td><td class="win">100.0&plusmn;0.0</td><td>5.3&plusmn;9.4</td><td class="win">99.3&plusmn;1.6</td><td>40.0&plusmn;10.6</td><td class="win">100.0&plusmn;0.0</td><td>27.0&plusmn;27.8</td><td class="win">99.7&plusmn;0.8</td><td>31.3&plusmn;9.9</td><td class="win">100.0&plusmn;0.0</td></tr>
+                <tr><td>Salad dressing</td><td>31.7&plusmn;22.0</td><td class="win">91.7&plusmn;7.7</td><td>29.7&plusmn;25.6</td><td class="win">90.3&plusmn;17.7</td><td>75.3&plusmn;11.8</td><td class="win">97.7&plusmn;3.9</td><td>53.3&plusmn;20.2</td><td class="win">97.7&plusmn;5.7</td><td>48.7&plusmn;10.6</td><td class="win">90.7&plusmn;22.9</td></tr>
+                <tr><td>Tomato sauce</td><td>23.0&plusmn;16.5</td><td class="win">85.7&plusmn;6.1</td><td>32.7&plusmn;24.6</td><td class="win">83.3&plusmn;13.8</td><td>44.3&plusmn;23.0</td><td class="win">90.7&plusmn;6.4</td><td>61.7&plusmn;18.4</td><td class="win">81.3&plusmn;10.9</td><td>63.3&plusmn;7.9</td><td class="win">94.3&plusmn;5.4</td></tr>
+                <tr class="row-avg"><td>Average</td><td>23.7&plusmn;14.1</td><td class="win">94.5&plusmn;3.7</td><td>13.5&plusmn;11.9</td><td class="win">91.7&plusmn;7.1</td><td>43.2&plusmn;11.8</td><td class="win">96.2&plusmn;3.4</td><td>36.7&plusmn;19.7</td><td class="win">90.3&plusmn;11.0</td><td>39.7&plusmn;8.4</td><td class="win">96.2&plusmn;5.0</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ LIBERO-PLUS ============ -->
+    <section class="section" id="libero-plus">
+      <div class="container">
+        <h2 class="section-title">LIBERO-Plus Generalization</h2>
+        <p class="body-text narrow">
+          Beyond our own challenge set, GloVLA also leads on the independent
+          <a href="https://arxiv.org/abs/2510.13626" target="_blank" rel="noopener">LIBERO-Plus</a>
+          Object suite, which probes seven distribution-shift axes. GloVLA obtains the
+          highest weighted average (88.2%) and leads on six of seven axes.
+        </p>
+
+        <figure class="figure chart-figure">
+          <svg viewBox="0 0 1000 380" role="img" aria-label="Weighted-average success on LIBERO-Plus across methods">
+            <g class="chart-grid">
+              <line x1="80" y1="320" x2="950" y2="320"/>
+              <line x1="80" y1="245" x2="950" y2="245"/>
+              <line x1="80" y1="170" x2="950" y2="170"/>
+              <line x1="80" y1="95"  x2="950" y2="95"/>
+              <line x1="80" y1="20"  x2="950" y2="20"/>
+            </g>
+            <g class="chart-ticks" text-anchor="end">
+              <text x="70" y="324">0</text>
+              <text x="70" y="249">25</text>
+              <text x="70" y="174">50</text>
+              <text x="70" y="99">75</text>
+              <text x="70" y="24">100</text>
+            </g>
+            <!-- baselines in gray, GloVLA in orange -->
+            <g>
+              <rect class="bar-full" x="143" y="120.5" width="48" height="199.5" rx="4"/>
+              <text class="bar-label" x="167" y="112" text-anchor="middle">66.5</text>
+              <text class="axis-label" x="167" y="344" text-anchor="middle">OpenVLA-OFT</text>
+            </g>
+            <g>
+              <rect class="bar-full" x="317" y="101.9" width="48" height="218.1" rx="4"/>
+              <text class="bar-label" x="341" y="93" text-anchor="middle">72.7</text>
+              <text class="axis-label" x="341" y="344" text-anchor="middle">&pi;&#8320;-FAST</text>
+            </g>
+            <g>
+              <rect class="bar-full" x="491" y="88.7" width="48" height="231.3" rx="4"/>
+              <text class="bar-label" x="515" y="80" text-anchor="middle">77.1</text>
+              <text class="axis-label" x="515" y="344" text-anchor="middle">OpenVLA-OFTm</text>
+            </g>
+            <g>
+              <rect class="bar-full" x="665" y="90.2" width="48" height="229.8" rx="4"/>
+              <text class="bar-label" x="689" y="82" text-anchor="middle">76.6</text>
+              <text class="axis-label" x="689" y="344" text-anchor="middle">GR00T N1.6</text>
+            </g>
+            <g>
+              <rect class="bar-hyb" x="839" y="55.4" width="48" height="264.6" rx="4"/>
+              <text class="bar-label" x="863" y="47" text-anchor="middle">88.2</text>
+              <text class="axis-label" x="863" y="344" text-anchor="middle">GloVLA</text>
+            </g>
+          </svg>
+          <figcaption>Weighted-average success (%) on the LIBERO-Plus Object suite, weighted by episodes per axis following the LIBERO-Plus protocol.</figcaption>
+        </figure>
+
+        <details class="table-details">
+          <summary>Per-axis LIBERO-Plus results (Table IV)</summary>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Method</th><th>Avg.</th><th>Cam.</th><th>Robot</th><th>Lang.</th><th>Light</th><th>BG</th><th>Noise</th><th>Layout</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>OpenVLA-OFT</td><td>66.5</td><td>38.9</td><td>25.4</td><td class="win">99.0</td><td>73.7</td><td>97.6</td><td>72.3</td><td>71.8</td></tr>
+                <tr><td>&pi;<sub>0</sub>-FAST</td><td>72.7</td><td>72.0</td><td>27.6</td><td>71.5</td><td>71.0</td><td>95.2</td><td>93.1</td><td>84.5</td></tr>
+                <tr><td>OpenVLA-OFTm</td><td>77.1</td><td>70.2</td><td>18.1</td><td>98.5</td><td class="win">100.0</td><td>91.9</td><td class="win">94.1</td><td>77.4</td></tr>
+                <tr><td>GR00T N1.6</td><td>76.6</td><td>56.8</td><td>47.2</td><td>90.4</td><td class="win">100.0</td><td class="win">99.6</td><td>76.3</td><td>81.6</td></tr>
+                <tr class="row-avg"><td>GloVLA</td><td class="win">88.2</td><td class="win">77.3</td><td class="win">70.6</td><td class="win">100.0</td><td class="win">100.0</td><td class="win">99.6</td><td>92.4</td><td class="win">85.9</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ============ DATA EFFICIENCY ============ -->
+    <section class="section" id="data-efficiency">
+      <div class="container">
+        <h2 class="section-title">Data Efficiency</h2>
+        <p class="body-text narrow">
+          Because transport is delegated to geometry, the VLA can spend its limited data
+          capacity on local interaction. Under matched source-demonstration budgets,
+          GloVLA reaches near-perfect success with far fewer demos: at 10 demos it already
+          averages 45.1% across unstructured conditions versus 9.1% for FullVLA, and by
+          50 demos it saturates at 99.9% (FullVLA 48.5%).
+        </p>
+
+        <figure class="figure chart-figure">
+          <svg viewBox="0 0 1000 400" role="img" aria-label="Average success versus demonstration budget, FullVLA versus GloVLA">
+            <g class="chart-grid">
+              <line x1="90" y1="320" x2="910" y2="320"/>
+              <line x1="90" y1="245" x2="910" y2="245"/>
+              <line x1="90" y1="170" x2="910" y2="170"/>
+              <line x1="90" y1="95"  x2="910" y2="95"/>
+              <line x1="90" y1="20"  x2="910" y2="20"/>
+            </g>
+            <g class="chart-ticks" text-anchor="end">
+              <text x="80" y="324">0</text>
+              <text x="80" y="249">25</text>
+              <text x="80" y="174">50</text>
+              <text x="80" y="99">75</text>
+              <text x="80" y="24">100</text>
+            </g>
+            <polyline class="line-full" points="90,292.7 500,260.3 910,174.5"/>
+            <polyline class="line-hyb"  points="90,184.7 500,21.5 910,20.3"/>
+            <g class="marker-full">
+              <circle cx="90" cy="292.7" r="6"/>
+              <circle cx="500" cy="260.3" r="6"/>
+              <circle cx="910" cy="174.5" r="6"/>
+            </g>
+            <g class="marker-hyb">
+              <circle cx="90" cy="184.7" r="6"/>
+              <circle cx="500" cy="21.5" r="6"/>
+              <circle cx="910" cy="20.3" r="6"/>
+            </g>
+            <g class="bar-label">
+              <text x="112" y="288">9.1</text>
+              <text x="500" y="278" text-anchor="middle">19.9</text>
+              <text x="888" y="192" text-anchor="end">48.5</text>
+              <text x="112" y="179">45.1</text>
+              <text x="500" y="15" text-anchor="middle">99.5</text>
+              <text x="888" y="14" text-anchor="end">99.9</text>
+            </g>
+            <g class="axis-label" text-anchor="middle">
+              <text x="120" y="352">10 demos</text>
+              <text x="500" y="352">30 demos</text>
+              <text x="880" y="352">50 demos</text>
+            </g>
+            <g class="chart-legend">
+              <rect x="90" y="376" width="14" height="14" rx="3" class="bar-full"/>
+              <text x="112" y="388">FullVLA</text>
+              <rect x="205" y="376" width="14" height="14" rx="3" class="bar-hyb"/>
+              <text x="227" y="388">GloVLA (Ours)</text>
+            </g>
+          </svg>
+          <figcaption>Average success (%) over five unstructured conditions versus demonstration budget (LIBERO-Challenge Task 1). GloVLA is dramatically more sample-efficient than full-trajectory training.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ EXPERIMENTS (VIDEOS) ============ -->
+    <section class="section" id="experiments">
+      <div class="container">
+        <h2 class="section-title">Real-Robot Rollouts</h2>
+        <p class="body-text narrow">
+          Real-robot tabletop trials mirror the simulated perturbation families: added
+          objects, partial obstruction, illumination change, viewpoint shift, distractors,
+          and composed medium / difficult scenes. All videos play at 3&times; speed.
+        </p>
+
+        <div class="video-grid">
+          <figure class="video-card">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/clutter.mp4" type="video/mp4">
+            </video>
+            <figcaption>Clutter &mdash; added objects around the target</figcaption>
+          </figure>
+          <figure class="video-card">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/distraction.mp4" type="video/mp4">
+            </video>
+            <figcaption>Distraction &mdash; look-alike distractor objects</figcaption>
+          </figure>
+          <figure class="video-card">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/obstruction.mp4" type="video/mp4">
+            </video>
+            <figcaption>Obstruction &mdash; partial camera / target occlusion</figcaption>
+          </figure>
+          <figure class="video-card">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/illumination.mp4" type="video/mp4">
+            </video>
+            <figcaption>Illumination shift</figcaption>
+          </figure>
+          <figure class="video-card">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/visual_shift.mp4" type="video/mp4">
+            </video>
+            <figcaption>Visual shift &mdash; scene appearance change</figcaption>
+          </figure>
+          <figure class="video-card">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/medium.mp4" type="video/mp4">
+            </video>
+            <figcaption>Medium composition &mdash; two to three stressors</figcaption>
+          </figure>
+          <figure class="video-card video-card-wide">
+            <video autoplay muted loop playsinline controls>
+              <source src="static/videos/hard.mp4" type="video/mp4">
+            </video>
+            <figcaption>Difficult composition &mdash; four or more stressors combined</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ REAL-ROBOT RESULTS ============ -->
+    <section class="section" id="results-real">
+      <div class="container">
+        <h2 class="section-title">Real-Robot Results</h2>
+        <p class="body-text narrow">
+          On a physical UR10e, the factorization transfers cleanly: near-parity on the
+          clean tabletop, and the largest gains exactly where long-range visual servoing
+          is disrupted &mdash; illumination (0% &rarr; 80%), distraction (20% &rarr; 100%),
+          and both composition tiers. Overall success rises from 35.6% to 90.0%, while
+          mean inference time is more than halved.
+        </p>
+
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value">35.6% &rarr; 90.0%</span>
+            <span class="stat-label">overall real-robot success, FullVLA &rarr; GloVLA (+54.4 points)</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">60.1s &rarr; 28.2s</span>
+            <span class="stat-label">mean inference time per episode (&minus;53%)</span>
+          </div>
+        </div>
+
+        <figure class="figure chart-figure">
+          <svg viewBox="0 0 1000 626" role="img" aria-label="Real-robot success rate by setting, FullVLA versus GloVLA">
+            <g class="hbar-rows">
+              <g>
+                <text class="axis-label" x="188" y="44" text-anchor="end">Clean tabletop</text>
+                <rect class="bar-full" x="200" y="28" width="630.0" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="50" width="665.0" height="20" rx="4"/>
+                <text class="bar-label" x="838" y="43">90%</text>
+                <text class="bar-label" x="873" y="65">95%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="108" text-anchor="end">Clutter</text>
+                <rect class="bar-full" x="200" y="92" width="210.0" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="114" width="630.0" height="20" rx="4"/>
+                <text class="bar-label" x="418" y="107">30%</text>
+                <text class="bar-label" x="838" y="129">90%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="172" text-anchor="end">Obstruction</text>
+                <rect class="bar-full" x="200" y="156" width="280.0" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="178" width="700.0" height="20" rx="4"/>
+                <text class="bar-label" x="488" y="171">40%</text>
+                <text class="bar-label bar-label-in" x="892" y="193" text-anchor="end">100%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="236" text-anchor="end">Illumination</text>
+                <rect class="bar-full" x="200" y="220" width="4" height="20" rx="2"/>
+                <rect class="bar-hyb"  x="200" y="242" width="560.0" height="20" rx="4"/>
+                <text class="bar-label" x="212" y="235">0%</text>
+                <text class="bar-label" x="768" y="257">80%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="300" text-anchor="end">Visual shift</text>
+                <rect class="bar-full" x="200" y="284" width="280.0" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="306" width="700.0" height="20" rx="4"/>
+                <text class="bar-label" x="488" y="299">40%</text>
+                <text class="bar-label bar-label-in" x="892" y="321" text-anchor="end">100%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="364" text-anchor="end">Distraction</text>
+                <rect class="bar-full" x="200" y="348" width="140.0" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="370" width="700.0" height="20" rx="4"/>
+                <text class="bar-label" x="348" y="363">20%</text>
+                <text class="bar-label bar-label-in" x="892" y="385" text-anchor="end">100%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="428" text-anchor="end">Medium comp.</text>
+                <rect class="bar-full" x="200" y="412" width="70.0" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="434" width="560.0" height="20" rx="4"/>
+                <text class="bar-label" x="278" y="427">10%</text>
+                <text class="bar-label" x="768" y="449">80%</text>
+              </g>
+              <g>
+                <text class="axis-label" x="188" y="492" text-anchor="end">Hard comp.</text>
+                <rect class="bar-full" x="200" y="476" width="4" height="20" rx="2"/>
+                <rect class="bar-hyb"  x="200" y="498" width="490.0" height="20" rx="4"/>
+                <text class="bar-label" x="212" y="491">0%</text>
+                <text class="bar-label" x="698" y="513">70%</text>
+              </g>
+              <g class="row-overall">
+                <text class="axis-label" x="188" y="556" text-anchor="end">Overall</text>
+                <rect class="bar-full" x="200" y="540" width="249.2" height="20" rx="4"/>
+                <rect class="bar-hyb"  x="200" y="562" width="630.0" height="20" rx="4"/>
+                <text class="bar-label" x="457" y="555">35.6%</text>
+                <text class="bar-label" x="838" y="577">90.0%</text>
+              </g>
+            </g>
+            <g class="chart-legend">
+              <rect x="200" y="606" width="14" height="14" rx="3" class="bar-full"/>
+              <text x="222" y="618">FullVLA</text>
+              <rect x="315" y="606" width="14" height="14" rx="3" class="bar-hyb"/>
+              <text x="337" y="618">GloVLA (Ours)</text>
+            </g>
+          </svg>
+          <figcaption>Real-robot success rate on UR10e (clean: 20 trials; each perturbation: 10 trials). Overall success improves +54.4 points, from 35.6% to 90.0%.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ BIBTEX ============ -->
+    <section class="section" id="bibtex">
+      <div class="container narrow">
+        <h2 class="section-title">BibTeX</h2>
+        <pre class="bibtex"><code>@article{glovla2026,
+  title   = {GloVLA: Let Geometry Move and VLA Interact for Robust
+             Object-Centric Manipulation in Unstructured Environments},
+  author  = {Anonymous Authors},
+  journal = {Under review},
+  year    = {2026}
+}</code></pre>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>
+        Website template inspired by <a href="https://nerfies.github.io" target="_blank" rel="noopener">Nerfies</a>.
+        Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+      </p>
+    </div>
+  </footer>
+
+  <script src="static/js/main.js"></script>
+</body>
+</html>

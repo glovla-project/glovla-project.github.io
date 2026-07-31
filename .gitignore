@@ -1,0 +1,13 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Python cache from the tooling scripts
+__pycache__/
+*.pyc
+
+# scratch / local previews
+*.log
