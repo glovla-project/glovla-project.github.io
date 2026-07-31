@@ -11,3 +11,7 @@ __pycache__/
 
 # scratch / local previews
 *.log
+
+# large source videos — only committed the web-optimized .mp4
+static/videos/*.mov
+*.MOV
