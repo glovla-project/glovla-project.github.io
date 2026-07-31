@@ -1,11 +1,17 @@
-// Playback speed for experiment videos (change PLAYBACK_RATE to adjust)
-const PLAYBACK_RATE = 3;
+// Playback speed per video group (change to adjust)
+const PLAYBACK_RATE = 3;      // teaser + real-robot rollouts
+const SIM_PLAYBACK_RATE = 2;  // simulation compare clips
 
-document.querySelectorAll('.video-card video, .teaser-video video').forEach((v) => {
-  v.playbackRate = PLAYBACK_RATE;
+function pinRate(v, rate) {
+  v.playbackRate = rate;
   // re-apply after seeking/reload — some browsers reset the rate
-  v.addEventListener('loadedmetadata', () => { v.playbackRate = PLAYBACK_RATE; });
-  v.addEventListener('play', () => { v.playbackRate = PLAYBACK_RATE; });
+  v.addEventListener('loadedmetadata', () => { v.playbackRate = rate; });
+  v.addEventListener('play', () => { v.playbackRate = rate; });
+}
+
+document.querySelectorAll('.teaser-video video, .video-card video').forEach((v) => {
+  const rate = v.closest('.sim-grid') ? SIM_PLAYBACK_RATE : PLAYBACK_RATE;
+  pinRate(v, rate);
 });
 
 // ---- Live phase badge on the teaser video ----

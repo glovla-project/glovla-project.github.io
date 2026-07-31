@@ -261,6 +261,17 @@ figcaption {
 }
 .video-card-wide { grid-column: 1 / -1; }
 .video-card-wide video { max-width: 640px; margin: 0 auto; }
+
+/* Portrait side-by-side compare clips (FullVLA over GloVLA) */
+.sim-grid { grid-template-columns: repeat(5, 1fr); }
+.sim-grid .video-card video {
+  aspect-ratio: 1 / 2;
+  object-fit: contain;
+  background: #14171c;
+}
+.tier-easy { color: #0ca30c; font-weight: 600; }
+.tier-medium { color: #eda100; font-weight: 600; }
+.tier-hard { color: #d03b3b; font-weight: 600; }
 .video-card video {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -587,6 +598,7 @@ figcaption {
 @media (max-width: 960px) {
   .principles { grid-template-columns: repeat(2, 1fr); }
   .video-grid { grid-template-columns: repeat(2, 1fr); }
+  .sim-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 720px) {
