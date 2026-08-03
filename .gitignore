@@ -15,3 +15,7 @@ __pycache__/
 # large source videos — only committed the web-optimized .mp4
 static/videos/*.mov
 *.MOV
+
+# local-only phase frame variants (keep on disk, out of the repo)
+static/images/phases/*_old.jpg
+static/images/phases/*_full.png
