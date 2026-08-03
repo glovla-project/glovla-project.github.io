@@ -19,3 +19,10 @@ static/videos/*.mov
 # local-only phase frame variants (keep on disk, out of the repo)
 static/images/phases/*_old.jpg
 static/images/phases/*_full.png
+
+# build/tooling scripts — contain local machine paths, not needed for the site
+tools/
+
+# stray local variants
+static/videos/*_old.mp4
+static/images/teaser.pdf
