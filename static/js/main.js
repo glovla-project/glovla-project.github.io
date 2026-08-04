@@ -20,10 +20,10 @@ document.querySelectorAll('.teaser-video video, .video-card video').forEach((v) 
 // TUNE these to the real phase timings of static/videos/teaser.mp4.
 const PHASE_TIMES = [
   { t: 0.0,  key: 'home',              label: 'home' },
-  { t: 2.5,  key: 'transport-object',  label: 'transport → object' },
-  { t: 5.0, key: 'grasp',             label: 'grasp VLA' },
-  { t: 17.0, key: 'transport-basket',  label: 'transport → basket' },
-  { t: 21.0, key: 'place',             label: 'place VLA' },
+  { t: 0.5,  key: 'transport-object',  label: 'transport → object' },
+  { t: 2.0, key: 'grasp',             label: 'grasp VLA' },
+  { t: 14.0, key: 'transport-basket',  label: 'transport → basket' },
+  { t: 18.0, key: 'place',             label: 'place VLA' },
 ];
 
 (function () {

@@ -82,7 +82,7 @@
               <span class="phase-text">home</span>
             </div>
           </div>
-          <figcaption>GloVLA on a real UR10e tabletop: a geometric transport controller (gray phases) moves the arm to object- and basket-centric handoff regions, then local VLA policies (orange phases) handle the contact-rich grasp and place. The badge tracks the current phase. Videos play at 3&times; speed.</figcaption>
+          <figcaption>GloVLA on a real UR10e: a geometric transport controller (gray phases) moves the arm to object- and basket-centric handoff regions, then local VLA policies (orange phases) handle the contact-rich grasp and place. The badge tracks the current phase. Videos play at 3&times; speed.</figcaption>
         </figure>
       </div>
     </section>
@@ -110,31 +110,31 @@
         <figure class="figure phase-machine" aria-label="Rollout state machine with a real episode frame per phase">
           <div class="phase-track">
             <div class="phase-panel">
-              <img src="static/images/phases/phase_0.jpg" alt="Home pose: arm at reset before transport">
+              <img src="static/images/phases/1.jpg" alt="Home pose: arm at reset before transport">
               <span class="phase-name phase-name-neutral">home</span>
               <span class="phase-desc">Robot at its reset pose; the target object is localized.</span>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/phase_1.jpg" alt="Transport controller drives the gripper toward the object (gray trace)">
+              <img src="static/images/phases/2.jpg" alt="Transport controller drives the gripper toward the object (gray trace)">
               <span class="phase-name phase-name-planner">transport &rarr; object</span>
               <span class="phase-desc">Controller drives the gripper to the object handoff region.</span>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/phase_2.jpg" alt="Local grasp VLA closes on the cup (orange trace)">
+              <img src="static/images/phases/3.jpg" alt="Local grasp VLA closes on the cup (orange trace)">
               <span class="phase-name phase-name-vla">grasp VLA</span>
               <span class="phase-desc">VLA closes the loop to grasp and lift the object.</span>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/phase_3.jpg" alt="Transport controller carries the object to the basket (gray trace)">
+              <img src="static/images/phases/4.jpg" alt="Transport controller carries the object to the basket (gray trace)">
               <span class="phase-name phase-name-planner">transport &rarr; basket</span>
               <span class="phase-desc">Controller carries the held object to the basket handoff region.</span>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/phase_4.jpg" alt="Local place VLA releases the object into the basket (orange trace)">
+              <img src="static/images/phases/5.jpg" alt="Local place VLA releases the object into the basket (orange trace)">
               <span class="phase-name phase-name-vla">place VLA</span>
               <span class="phase-desc">VLA aligns and releases the object into the basket.</span>
             </div>
