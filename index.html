@@ -94,7 +94,7 @@
 
         <figure class="figure">
           <img src="static/images/method_flowchart.png" alt="FullVLA baseline versus the proposed GloVLA: geometry for transport, VLA for contact">
-          <figcaption>A full-trajectory VLA must stay visually stable over the entire episode, so failures occur before the robot ever reaches the contact phase. GloVLA factorizes the task: a geometric transport controller moves the end-effector into interaction-centric handoff regions, and a local VLA policy is invoked only inside the object-centric handoff ball <em>B<sub>o</sub></em> where visual feedback and contact reasoning are genuinely needed.</figcaption>
+          <figcaption>A full-trajectory VLA must stay visually stable over the entire episode, so failures occur before the robot ever reaches the contact phase. GloVLA factorizes the task: a geometric transport controller moves the end-effector into interaction-centric handoff regions, and a local VLA policy is invoked only inside the object-centric handoff region (dashed) where visual feedback and contact reasoning are genuinely needed.</figcaption>
         </figure>
 
         <p class="body-text narrow">
@@ -165,7 +165,7 @@
         <p class="body-text narrow">
           Even on the standard benchmark, where FullVLA is already strong, the factorization
           improves average success for every one of the four backbones &mdash; and reduces
-          episode-to-episode variance (e.g. GR00T N1.6&rsquo;s standard deviation drops from
+          run-to-run variance (e.g. GR00T N1.6&rsquo;s standard deviation drops from
           6.0 to 1.9 points).
         </p>
 
@@ -410,7 +410,7 @@
         </figure>
 
         <details class="table-details">
-          <summary>Per-task robustness table, all ten objects (Table IV)</summary>
+          <summary>Per-task robustness table, all ten objects (Table III)</summary>
           <div class="table-wrap">
             <table>
               <thead>
@@ -832,7 +832,7 @@
       <div class="container narrow">
         <h2 class="section-title">BibTeX</h2>
         <pre class="bibtex"><code>@article{glovla2026,
-  title   = {GloVLA: Let Geometry Move and VLA Interact for Robust
+  title   = {GloVLA: Let Geometry Move and Local VLA Interact for Robust
              Object-Centric Manipulation in Unstructured Environments},
   author  = {Anonymous Authors},
   journal = {Under review},
