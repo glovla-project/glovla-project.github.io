@@ -360,13 +360,20 @@ figcaption {
   align-items: start;
   gap: 4px;
 }
-.phase-panel { text-align: center; }
-.phase-panel img {
+.phase-panel {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.phase-cap { text-align: center; }
+.phase-img img {
   width: 100%;
   aspect-ratio: 19 / 14;
   object-fit: cover;
   border-radius: 12px;
   border: 1px solid var(--border);
+  cursor: zoom-in;
+  display: block;
 }
 .phase-index {
   display: inline-block;
@@ -393,11 +400,41 @@ figcaption {
 .phase-name-neutral { color: var(--text-dim); }
 .phase-name-planner { color: #3D4450; }
 .phase-name-vla { color: #C24A24; }
+
+/* ============ Image lightbox (click to zoom) ============ */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(10, 12, 15, 0.9);
+  cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox img {
+  max-width: 96vw;
+  max-height: 92vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
+}
+/* arrow vertically centered on the image band.
+   image height = column-width * 14/19; column-width ≈ (track - arrows - gaps)/5.
+   The arrow spacer box below reproduces that height so align matches exactly. */
 .phase-sep {
-  color: var(--accent);
-  font-size: 1.6rem;
   align-self: start;
-  margin-top: 20%;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  font-size: 1.7rem;
+  /* height of one image cell: (100% of the 1fr column) * 14/19.
+     A zero-width helper with the image aspect can't know the 1fr width, so we
+     approximate the image height from the track width. */
+  height: calc((min(var(--wide), 100vw - 48px) - 4 * 1.7rem - 8 * 4px) / 5 * 14 / 19);
 }
 
 /* ============ Live phase badge on teaser video ============ */

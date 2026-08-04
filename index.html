@@ -29,7 +29,7 @@
       <h1 class="hero-title">GloVLA: Let Geometry Move and Local VLA Interact for Robust Object-Centric Manipulation in Unstructured Environments</h1>
 
       <p class="authors">Anonymous Authors</p>
-      <p class="affiliations">Paper under double-blind review</p>
+      <!-- <p class="affiliations">Paper under double-blind review</p> -->
 
       <!-- Resource buttons (Paper / Code / Video) intentionally omitted for double-blind review. -->
       <nav class="hero-links" aria-label="Paper resources"></nav>
@@ -110,33 +110,28 @@
         <figure class="figure phase-machine" aria-label="Rollout state machine with a real episode frame per phase">
           <div class="phase-track">
             <div class="phase-panel">
-              <img src="static/images/phases/1.jpg" alt="Home pose: arm at reset before transport">
-              <span class="phase-name phase-name-neutral">home</span>
-              <span class="phase-desc">Robot at its reset pose; the target object is localized.</span>
+              <div class="phase-img"><img src="static/images/phases/1.jpg" alt="Home pose: arm at reset before transport"></div>
+              <div class="phase-cap"><span class="phase-name phase-name-neutral">home</span><span class="phase-desc">Robot at its reset pose; the target object is localized.</span></div>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/2.jpg" alt="Transport controller drives the gripper toward the object (gray trace)">
-              <span class="phase-name phase-name-planner">transport &rarr; object</span>
-              <span class="phase-desc">Controller drives the gripper to the object handoff region.</span>
+              <div class="phase-img"><img src="static/images/phases/2.jpg" alt="Transport controller drives the gripper toward the object (gray trace)"></div>
+              <div class="phase-cap"><span class="phase-name phase-name-planner">transport &rarr; object</span><span class="phase-desc">Controller drives the gripper to the object handoff region.</span></div>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/3.jpg" alt="Local grasp VLA closes on the cup (orange trace)">
-              <span class="phase-name phase-name-vla">grasp VLA</span>
-              <span class="phase-desc">VLA closes the loop to grasp and lift the object.</span>
+              <div class="phase-img"><img src="static/images/phases/3.jpg" alt="Local grasp VLA closes on the cup (orange trace)"></div>
+              <div class="phase-cap"><span class="phase-name phase-name-vla">grasp VLA</span><span class="phase-desc">VLA closes the loop to grasp and lift the object.</span></div>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/4.jpg" alt="Transport controller carries the object to the basket (gray trace)">
-              <span class="phase-name phase-name-planner">transport &rarr; basket</span>
-              <span class="phase-desc">Controller carries the held object to the basket handoff region.</span>
+              <div class="phase-img"><img src="static/images/phases/4.jpg" alt="Transport controller carries the object to the basket (gray trace)"></div>
+              <div class="phase-cap"><span class="phase-name phase-name-planner">transport &rarr; basket</span><span class="phase-desc">Controller carries the held object to the basket handoff region.</span></div>
             </div>
             <span class="phase-sep">&rarr;</span>
             <div class="phase-panel">
-              <img src="static/images/phases/5.jpg" alt="Local place VLA releases the object into the basket (orange trace)">
-              <span class="phase-name phase-name-vla">place VLA</span>
-              <span class="phase-desc">VLA aligns and releases the object into the basket.</span>
+              <div class="phase-img"><img src="static/images/phases/5.jpg" alt="Local place VLA releases the object into the basket (orange trace)"></div>
+              <div class="phase-cap"><span class="phase-name phase-name-vla">place VLA</span><span class="phase-desc">VLA aligns and releases the object into the basket.</span></div>
             </div>
           </div>
           <figcaption>One real episode through the four-mode switched state machine. The gripper trace is colored by controller: <span class="key-planner">gray</span> segments are geometric transport, <span class="key-vla">orange</span> segments are the local VLA policies acting inside the handoff regions.</figcaption>
@@ -166,9 +161,9 @@
     <!-- ============ RESULTS: CLEAN BENCHMARK ============ -->
     <section class="section" id="results-clean">
       <div class="container">
-        <h2 class="section-title">Stardard LIBERO Object Results</h2>
+        <h2 class="section-title">Standard LIBERO Object Results</h2>
         <p class="body-text narrow">
-          Even on the clean benchmark, where FullVLA is already strong, the factorization
+          Even on the standard benchmark, where FullVLA is already strong, the factorization
           improves average success for every one of the four backbones &mdash; and reduces
           episode-to-episode variance (e.g. GR00T N1.6&rsquo;s standard deviation drops from
           6.0 to 1.9 points).
@@ -856,6 +851,9 @@
       </p>
     </div>
   </footer>
+
+  <!-- click-to-zoom overlay for phase panels -->
+  <div class="lightbox" id="lightbox"><img alt="Zoomed phase frame"></div>
 
   <script src="static/js/main.js"></script>
 </body>
